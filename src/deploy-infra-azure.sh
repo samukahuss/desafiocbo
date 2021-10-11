@@ -209,20 +209,6 @@ az network lb create -g $RG -n $LB_BACK \
 --tags $TAGS \
 -o table --verbose
 
-#Criação do frontend pool
-echo "Criação do frontend pool"
-az network lb address-pool create -g $RG \
---lb-name $LB_FRONT \
--n $BP_FRONT \
--o table --verbose
-
-#Criação do backend pool
-echo "Criação do backend pool"
-az network lb address-pool create -g $RG \
---lb-name $LB_BACK \
--n $BP_BACK \
--o table --verbose
-
 #Aceitando as licencas das imagens do nginx
 echo "Aceitando as licencas das imagens do nginx"
 az vm image terms accept \
@@ -261,6 +247,24 @@ az vm create -n $VM_FRONT_NAME2 \
 --generate-ssh-keys \
 --size $VM_FRONT_SIZE \
 --tags $TAGS \
+-o table --verbose
+
+#Criação do frontend pool
+echo "Criação do frontend pool"
+az network lb address-pool create \
+-g $RG \
+--lb-name $LB_FRONT \
+-n $BP_FRONT \
+--backend-address name=$VM_FRONT_NAME1 ip-address=$VM_FRONT_IP1 \
+--backend-address name=$VM_FRONT_NAME2 ip-address=$VM_FRONT_IP2 \
+-o table --verbose
+
+#Criação do backend pool
+echo "Criação do backend pool"
+az network lb address-pool create \
+-g $RG \
+--lb-name $LB_BACK \
+-n $BP_BACK \
 -o table --verbose
 
 #Criação da vm de mgmt
