@@ -2,10 +2,12 @@
 
 #---------------------------------------------------------------
 #Variaveis:
+OUTPUT='-o table --verbose'
 
 RG='rg-desafio'
 RG_LOCATION='eastus2'
-DNS_ZONE='desafiocbo.labs'
+DNS_ZONE='private.desafiocbo.com'
+DNS_LINK_NAME='desafiocbo-dnslink'
 NSG='nsg-desafio'
 TAGS='ambiente=desafio'
 VNET='vnet-desafio'
@@ -15,14 +17,14 @@ AS_FRONT_NAME="as-front-eastus2"
 #Subnets
 SN_MGMT='subnet-mgmt'
 SN_MGMT_PREFIX='10.1.1.0/24'
-SN_LB='subnet-lb'
-SN_LB_PREFIX='10.1.2.0/24'
 SN_FRONT='subnet-front'
 SN_FRONT_PREFIX='10.1.3.0/24'
 SN_BACK='subnet-back'
 SN_BACK_PREFIX='10.1.4.0/24'
 SN_DATA='subnet-data'
 SN_DATA_PREFIX='10.1.5.0/24'
+SN_APPGW='subnet-appgw'
+SN_APPGW_PREFIX='10.1.2.0/24'
 
 #Load balances
 LB_SKU='Basic'
@@ -73,7 +75,55 @@ VM_MGMT_OS_DISK_SIZE='10'
 VM_MGMT_OS_DISK_SKU='StandardSSD_LRS'
 VM_MGMT_OS_TYPE='linux'
 
-#NSG rules
+#App service 
+BACK_APP_PATH='/repos/github/desafiocbo-app'
+BACK_APP_SKU='PremiumV2'
+#"PremiumV2"
+#'S1'
+BACK_APP_NAME='app-desafiocbo'
+BACK_APP_FQDN="$BACK_APP_NAME.azurewebsites.net"
+BACK_APP_LOCATION='eastus2'
+BACK_APP_SP='app-serviceplan-desafiocbo'
+
+#Application Gateway
+APPGW_NAME='appgw-desafiocbo'
+APPGW_PUBLIC_IP='appgw-desafiocbo-pip'
+APPGW_PRIVATE_IP='10.1.2.10'
+APPGW_LOCATION='eastus2'
+APPGW_SKU='Standard_Medium'
+APPGW_RT_RULE='PathBasedRouting'
+APPGW_BPOOL_FRONT='bpool-front'
+APPGW_BPOOL_BACK='bpool-back'
+APPGW_DEFAULT_RULE='Rule1'
+
+#Application Gateway Rule
+AGR_NAME_FRONT='rule-http-front'
+AGR_NAME_PATH='/front'
+AGR_NAME_BACK='rule-http-back'
+
+#Http-settings
+HS_NAME='appGatewayBackendHttpSettings'
+
+#url-path-map
+UPM_NAME='url-map-http'
+
+#url-path-map rule
+UPMR_NAME='rule-http-back'
+UPMR_NAME_PATH='/back'
+
+#probe
+PROBE_NAME='probe-http'
+
+#MariaDB
+DB_NAME='dbdesafiocbo'
+DB_USER='dbadmin'
+DB_PASS='ASD.asdf2021'
+DB_STG_SIZE='5120'
+DB_SKU='GP_Gen5_2'
+
+#Data private endpoint
+DATA_PRIVATE_ENDPOINT_NAME='data-private-endpoint'
+PRIVATE_ENDPOINT_CONNECTION_NAME='data-connection'
 
 #---------------------------------------------------------------
 
@@ -83,21 +133,22 @@ az group create \
 --location $RG_LOCATION \
 --resource-group $RG \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
 #Criação do Network Security Group
 echo "Criação do Network Security Group"
 az network nsg create -g $RG \
 -n $NSG \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
 #Criação do DNS
 echo "Criação do DNS"
-az network dns zone create -g $RG \
+az network private-dns zone create \
+-g $RG \
 -n $DNS_ZONE \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
 #Criação do availability-set das vms de front
 echo "Criação do availability-set das vms de front"
@@ -107,52 +158,52 @@ az vm availability-set create \
 --platform-fault-domain-count 2 \
 --platform-update-domain-count 2 \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
 #Adicionando entrada no DNS: load balance frontend
-echo "Adicionando entrada no DNS: load balance frontend"
-az network dns record-set a add-record \
--g $RG \
--z $DNS_ZONE \
--n $LB_FRONT \
--a $LB_FRONT_IP \
--o table --verbose
+#echo "Adicionando entrada no DNS: load balance frontend"
+#az network private-dns record-set a add-record \
+#-g $RG \
+#-z $DNS_ZONE \
+#-n $LB_FRONT \
+#-a $LB_FRONT_IP \
+#$OUTPUT
 
 #Adicionando entrada no DNS: load balance backend
-echo "Adicionando entrada no DNS: load balance backend"
-az network dns record-set a add-record \
--g $RG \
--z $DNS_ZONE \
--n $LB_BACK \
--a $LB_BACK_IP \
--o table --verbose
+#echo "Adicionando entrada no DNS: load balance backend"
+#az network private-dns record-set a add-record \
+#-g $RG \
+#-z $DNS_ZONE \
+#-n $LB_BACK \
+#-a $LB_BACK_IP \
+#$OUTPUT
 
 #Adicionando entrada no DNS: vm front1
 echo "Adicionando entrada no DNS: vm front1"
-az network dns record-set a add-record \
+az network private-dns record-set a add-record \
 -g $RG \
 -z $DNS_ZONE \
 -n $VM_FRONT_NAME1 \
 -a $VM_FRONT_IP1 \
--o table --verbose
+$OUTPUT
 
 #Adicionando entrada no DNS: vm front2
 echo "Adicionando entrada no DNS: vm front2"
-az network dns record-set a add-record \
+az network private-dns record-set a add-record \
 -g $RG \
 -z $DNS_ZONE \
 -n $VM_FRONT_NAME2 \
 -a $VM_FRONT_IP2 \
--o table --verbose
+$OUTPUT
 
 #Adicionando entrada no DNS: vm de gerencia
 echo "Adicionando entrada no DNS: vm de gerencia"
-az network dns record-set a add-record \
+az network private-dns record-set a add-record \
 -g $RG \
 -z $DNS_ZONE \
 -n $VM_MGMT_NAME \
 -a $VM_MGMT_IP \
--o table --verbose
+$OUTPUT
 
 #Criação da Virtual Network
 echo "Criação da Virtual Network"
@@ -162,7 +213,17 @@ az network vnet create -n $VNET --resource-group $RG \
 --subnet-prefixes $SN_MGMT_PREFIX \
 --network-security-group $NSG \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
+
+#link do DNS privado à vnet
+echo "link do DNS privado à vnet"
+az network private-dns link vnet create \
+-g $RG \
+-n $DNS_LINK_NAME \
+-z $DNS_ZONE \
+-v $VNET \
+-e False \
+$OUTPUT
 
 #Criação da subnet de frontend
 echo "Criação da subnet de frontend"
@@ -171,7 +232,7 @@ az network vnet subnet create -g $RG \
 -n $SN_FRONT \
 --address-prefixes $SN_FRONT_PREFIX \
 --network-security-group $NSG \
--o table --verbose
+$OUTPUT
 
 #Criação  da subnet de backend
 echo "Criação  da subnet de backend"
@@ -180,7 +241,7 @@ az network vnet subnet create -g $RG \
 -n $SN_BACK \
 --address-prefixes $SN_BACK_PREFIX \
 --network-security-group $NSG \
--o table --verbose
+$OUTPUT
 
 #Criação da subnet de dados
 echo "Criação da subnet de dados"
@@ -189,31 +250,41 @@ az network vnet subnet create -g $RG \
 -n $SN_DATA \
 --address-prefixes $SN_DATA_PREFIX \
 --network-security-group $NSG \
- -o table --verbose
+ $OUTPUT
 
-#Criação do load Balancer front
-echo "Criação do load Balancer front"
-az network lb create -g $RG -n $LB_FRONT \
---sku $LB_SKU \
+#Criação da subnet dp app-gw
+echo "Criação da subnet de dados"
+az network vnet subnet create -g $RG \
 --vnet-name $VNET \
---subnet $LB_FRONT_SN \
---tags $TAGS \
--o table --verbose
+-n $SN_APPGW \
+--address-prefixes $SN_APPGW_PREFIX \
+--network-security-group $NSG \
+$OUTPUT
 
-#Criação do load Balancer backend
-echo "Criação do load Balancer backend"
-az network lb create -g $RG -n $LB_BACK \
---sku $LB_SKU \
---vnet-name $VNET \
---subnet $LB_BACK_SN \
---tags $TAGS \
--o table --verbose
+
+##Criação do load Balancer front
+#echo "Criação do load Balancer front"
+#az network lb create -g $RG -n $LB_FRONT \
+#--sku $LB_SKU \
+#--vnet-name $VNET \
+#--subnet $LB_FRONT_SN \
+#--tags $TAGS \
+#$OUTPUT
+
+##Criação do load Balancer backend
+#echo "Criação do load Balancer backend"
+#az network lb create -g $RG -n $LB_BACK \
+#--sku $LB_SKU \
+#--vnet-name $VNET \
+#--subnet $LB_BACK_SN \
+#--tags $TAGS \
+#$OUTPUT
 
 #Aceitando as licencas das imagens do nginx
 echo "Aceitando as licencas das imagens do nginx"
 az vm image terms accept \
 --urn $VM_FRONT_IMAGE \
--o table --verbose
+$OUTPUT
 
 #Criação das VMs de front
 echo "Criação das VMs de front: front1"
@@ -230,7 +301,7 @@ az vm create -n $VM_FRONT_NAME1 \
 --generate-ssh-keys \
 --size $VM_FRONT_SIZE \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
 #Criação das VMs de front: front2
 echo "Criação das VMs de front: front2"
@@ -247,25 +318,25 @@ az vm create -n $VM_FRONT_NAME2 \
 --generate-ssh-keys \
 --size $VM_FRONT_SIZE \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
-#Criação do frontend pool
-echo "Criação do frontend pool"
-az network lb address-pool create \
--g $RG \
---lb-name $LB_FRONT \
--n $BP_FRONT \
---backend-address name=$VM_FRONT_NAME1 ip-address=$VM_FRONT_IP1 \
---backend-address name=$VM_FRONT_NAME2 ip-address=$VM_FRONT_IP2 \
--o table --verbose
+##Criação do frontend pool
+#echo "Criação do frontend pool"
+#az network lb address-pool create \
+#-g $RG \
+#--lb-name $LB_FRONT \
+#-n $BP_FRONT \
+#--backend-address name=$VM_FRONT_NAME1 ip-address=$VM_FRONT_IP1 \
+#--backend-address name=$VM_FRONT_NAME2 ip-address=$VM_FRONT_IP2 \
+#$OUTPUT
 
-#Criação do backend pool
-echo "Criação do backend pool"
-az network lb address-pool create \
--g $RG \
---lb-name $LB_BACK \
--n $BP_BACK \
--o table --verbose
+##Criação do backend pool
+#echo "Criação do backend pool"
+#az network lb address-pool create \
+#-g $RG \
+#--lb-name $LB_BACK \
+#-n $BP_BACK \
+#$OUTPUT
 
 #Criação da vm de mgmt
 echo "Criação da vm de mgmt"
@@ -282,7 +353,7 @@ az vm create -n $VM_MGMT_NAME \
 --generate-ssh-keys \
 --size $VM_MGMT_SIZE \
 --tags $TAGS \
--o table --verbose
+$OUTPUT
 
 #Criando regras do nsg
 echo "Criando regras do nsg"
@@ -298,7 +369,7 @@ az network nsg rule create \
 --source-address-prefixes "Internet" \
 --destination-port-ranges "22" \
 --destination-address-prefixes $SN_MGMT_PREFIX \
--o table --verbose
+$OUTPUT
 
 az network nsg rule create \
 --name "Allow-ssh-from-subnet-mgmt" \
@@ -312,7 +383,7 @@ az network nsg rule create \
 --source-address-prefixes "Internet" \
 --destination-port-ranges "22" \
 --destination-address-prefixes $SN_MGMT_PREFIX $SN_BACK_PREFIX $SN_DATA_PREFIX $SN_FRONT_PREFIX \
--o table --verbose
+$OUTPUT
 
 az network nsg rule create \
 --name "Allow-http-from-any" \
@@ -326,7 +397,7 @@ az network nsg rule create \
 --source-address-prefixes "*" \
 --destination-port-ranges "80" \
 --destination-address-prefixes $SN_FRONT_PREFIX $SN_BACK_PREFIX \
--o table --verbose
+$OUTPUT
 
 az network nsg rule create \
 --name "Allow-tcp-from-internal-to-mysql" \
@@ -340,4 +411,229 @@ az network nsg rule create \
 --source-address-prefixes $SN_FRONT_PREFIX $SN_BACK_PREFIX $SN_MGMT_PREFIX \
 --destination-port-ranges "3306" \
 --destination-address-prefixes $SN_DATA_PREFIX \
--o table --verbose
+$OUTPUT
+
+az network nsg rule create \
+--name "Allow-tcp-from-appgw-to-front-and-back" \
+--nsg-name $NSG \
+--priority 1500 \
+--description "Tcp from subnet-appgw to subnet-front and subnet-back" \
+-g $RG \
+--access "Allow" \
+--protocol "Tcp" \
+--direction "Inbound" \
+--source-address-prefixes $SN_APPGW_PREFIX \
+--destination-port-ranges "*" \
+--destination-address-prefixes $SN_FRONT_PREFIX $SN_BACK_PREFIX \
+$OUTPUT
+
+az network nsg rule create \
+--name "Allow-tcp-from-internet-to-appgw" \
+--nsg-name $NSG \
+--priority 1600 \
+--description "Tcp from subnet-appgw to subnet-front and subnet-back" \
+-g $RG \
+--access "Allow" \
+--protocol "Tcp" \
+--direction "Inbound" \
+--source-address-prefixes "Internet" \
+--destination-port-ranges "80" "443" "8080" \
+--destination-address-prefixes $SN_APPGW_PREFIX \
+$OUTPUT
+
+#Lembrar de informar essa parte no readme
+cd $BACK_APP_PATH
+
+az webapp up \
+--sku $BACK_APP_SKU \
+--name $BACK_APP_NAME \
+--location $BACK_APP_LOCATION \
+--resource-group $RG \
+--plan $BACK_APP_SP \
+$OUTPUT
+
+cd -
+
+
+#Criando o application gateway
+echo "Criando o application gateway"
+az network application-gateway create \
+--capacity 1 \
+--frontend-port 80 \
+--http-settings-cookie-based-affinity Disabled \
+--http-settings-port 80 \
+--http-settings-protocol Http \
+--location $APPGW_LOCATION \
+--name $APPGW_NAME \
+--public-ip-address $APPGW_PUBLIC_IP \
+--private-ip-address $APPGW_PRIVATE_IP \
+--resource-group $RG \
+--sku $APPGW_SKU \
+--subnet $SN_APPGW \
+--vnet-name $VNET \
+--tags $TAGS \
+$OUTPUT
+
+#Criando e adicionando o address-pool bpool-front ao appgw
+echo "Criando e adicionando o address-pool bpool-front ao appgw"
+az network application-gateway address-pool create \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $APPGW_BPOOL_FRONT \
+--servers $VM_FRONT_IP1 $VM_FRONT_IP2 \
+$OUTPUT
+
+az network application-gateway address-pool create \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $APPGW_BPOOL_BACK \
+--servers $BACK_APP_FQDN \
+$OUTPUT
+
+az network application-gateway url-path-map create \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $UPM_NAME \
+--rule-name $AGR_NAME_FRONT \
+--paths $AGR_NAME_PATH \
+--address-pool $APPGW_BPOOL_FRONT \
+--default-address-pool $APPGW_BPOOL_FRONT \
+--http-settings $HS_NAME \
+--default-http-settings $HS_NAME \
+$OUTPUT
+
+#criando uma nova probe http
+echo "criando uma nova probe"
+az network application-gateway probe create \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $PROBE_NAME \
+--protocol 'http' \
+--interval '10' \
+--timeout '10' \
+--threshold '3' \
+--host-name-from-http-settings 'true' \
+--path '/' \
+$OUTPUT
+
+#Habilitando o override no http-settings: '/'
+echo "Habilitando o override no http-settings: '/'"
+az network application-gateway http-settings update \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $HS_NAME \
+--path '/' \
+--host-name-from-backend-pool 'true' \
+--probe $PROBE_NAME \
+$OUTPUT
+
+#Atualizando a regra default: 'Rule1'
+echo "Atualizando a regra default: 'Rule1'"
+az network application-gateway rule update \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $APPGW_DEFAULT_RULE \
+--rule-type $APPGW_RT_RULE \
+--address-pool $APPGW_BPOOL_FRONT \
+--url-path-map $UPM_NAME \
+$OUTPUT
+
+#az network application-gateway http-settings create \
+#-g $RG \
+#--gateway-name $APPGW_NAME \
+#-n 'appGatewayBackendHttpsSettings' \
+#--port 443 \
+#--protocol Https \
+#--cookie-based-affinity Disabled \
+#--timeout 20 \
+#--path '/' \
+#$OUTPUT
+
+#Criando a regra para o path do backend
+echo "Criando a regra para o path do backend"
+az network application-gateway url-path-map rule create \
+-g $RG \
+--gateway-name $APPGW_NAME \
+-n $UPMR_NAME \
+--path-map-name $UPM_NAME \
+--paths $UPMR_NAME_PATH \
+--address-pool $APPGW_BPOOL_BACK \
+--http-settings $HS_NAME \
+$OUTPUT
+
+#Obtendo o ip publico da vmmgmt01
+echo "Obtendo o ip publico da vmmgmt01"
+VMMGMT01_PIP=$(az vm show -d -g rg-desafio -n vmmgmt01 --query publicIps -o tsv)
+
+#Adcionando entrada no DNS: VMMGMT01_PIP
+echo "Adcionando entrada no DNS: vmmgmt01-pip"
+az network private-dns record-set a add-record \
+-g $RG \
+-z $DNS_ZONE \
+-n 'vmmgmt01-pip' \
+-a $VMMGMT01_PIP \
+$OUTPUT
+
+#Desabilitando o alerta de endpoint-policy
+echo "Desabilitando o alerta de endpoint-policy"
+az network vnet subnet update \
+ --name $SN_DATA \
+ --resource-group $RG \
+ --vnet-name $VNET \
+ --disable-private-endpoint-network-policies true \
+ $OUTPUT
+
+# Criando database: mariadb
+echo "Criando database: mariadb"
+az mariadb server create \
+--name $DB_NAME \
+--resource-group $RG \
+--location $RG_LOCATION \
+--admin-user $DB_USER \
+--admin-password $DB_PASS \
+--auto-grow 'Disabled' \
+--public-network-access 'Disabled' \
+--storage-size $DB_STG_SIZE \
+--sku-name $DB_SKU \
+--tags ambiente=desafio \
+$OUTPUT
+
+#Obtendo private connection resource id:
+echo "Obtendo private connection resource id"
+PRIVATE_CONNECTION_RESOURCE_ID=$(az resource show -g $RG -n $DB_NAME --resource-type "Microsoft.DBforMariaDB/servers" --query "id" -o tsv)
+
+#criando o private-endpoint para a $SN_DATA e mariadb
+echo "criando o private-endpoint para a $SN_DATA e mariadb"
+az network private-endpoint create \
+--name $DATA_PRIVATE_ENDPOINT_NAME \
+--resource-group $RG \
+--vnet-name $VNET  \
+--subnet $SN_DATA \
+--private-connection-resource-id $PRIVATE_CONNECTION_RESOURCE_ID \
+--group-id 'mariadbServer' \
+--connection-name $PRIVATE_ENDPOINT_CONNECTION_NAME \
+$OUTPUT
+
+#Obtendo Network Interface Id
+echo "Obtendo Network Interface Id"
+NETWORK_INTERFACE_ID=$(az network private-endpoint show --name $DATA_PRIVATE_ENDPOINT_NAME --resource-group $RG --query 'networkInterfaces[0].id' -o tsv)
+
+#Obtendo o private ip da database
+echo "Obtendo o private ip da database"
+DB_PRIVATE_IP=$(az resource show --ids $NETWORK_INTERFACE_ID --api-version 2019-04-01 --query 'properties.ipConfigurations[].properties.privateIPAddress' -o tsv)
+
+#Adicionando a entrada no DNS: $DB_NAME $DB_PRIVATE_IP
+echo "Adicionando a entrada no DNS: $DB_NAME $DB_PRIVATE_IP" 
+az network private-dns record-set a create \
+--name $DB_NAME \
+--zone-name $DNS_ZONE \
+--resource-group $RG \
+$OUTPUT
+
+az network private-dns record-set a add-record \
+--record-set-name $DB_NAME \
+--zone-name $DNS_ZONE \
+--resource-group $RG \
+-a $DB_PRIVATE_IP \
+$OUTPUT
+
