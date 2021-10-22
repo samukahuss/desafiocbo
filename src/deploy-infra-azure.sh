@@ -125,6 +125,9 @@ DB_SKU='GP_Gen5_2'
 DATA_PRIVATE_ENDPOINT_NAME='data-private-endpoint'
 PRIVATE_ENDPOINT_CONNECTION_NAME='data-connection'
 
+#App private endpoint
+WEB_PRIVATE_ENDPOINT='webapp-private-endpoint' 
+WEB_CONNECTION_NAME='webapp-connection'
 #---------------------------------------------------------------
 
 #Criação do resource group
@@ -454,6 +457,41 @@ $OUTPUT
 
 cd -
 
+#desabilitando private endpoint policy: subnet-back
+echo "desabilitando private endpoint policy: subnet-back"
+az network vnet subnet update \
+--name $SN_BACK \
+--resource-group $RG \
+--vnet-name $VNET \
+--disable-private-endpoint-network-policies true
+
+WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID=$(az resource show -g $RG -n $BACK_APP_NAME --resource-type "Microsoft.Web/sites" --query "id" -o tsv)
+
+#Criacao do private-endpoint para o webapp
+echo "Criacao do private-endpoint para o webapp"
+az network private-endpoint create \
+--name $WEB_PRIVATE_ENDPOINT \
+--resource-group $RG \
+--vnet-name $VNET \
+--subnet $SN_BACK \
+--connection-name $WEB_CONNECTION_NAME \
+--private-connection-resource-id $WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID \
+--group-id 'sites'
+
+WEBAPP_PRIVATE_IP=$(az resource show --ids $WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID  --query 'properties.privateEndpointConnections[0].properties.ipAddresses[0]' -o tsv)
+
+#adcição da entrada no DNS: app-desafiocbo
+echo "adcição da entrada no DNS: app-desafiocbo"
+az network private-dns record-set a create \
+--name $BACK_APP_NAME \
+--zone-name $RG \
+--resource-group $RG
+
+az network private-dns record-set a add-record \
+--record-set-name $BACK_APP_NAME \
+--zone-name $DNS_ZONE \
+--resource-group $RG \
+-a $WEBAPP_PRIVATE_IP
 
 #Criando o application gateway
 echo "Criando o application gateway"
@@ -483,13 +521,17 @@ az network application-gateway address-pool create \
 --servers $VM_FRONT_IP1 $VM_FRONT_IP2 \
 $OUTPUT
 
+#Criando e adicionando o address-pool bpool-back ao appgw
+echo "Criando e adicionando o address-pool bpool-back ao appgw"
 az network application-gateway address-pool create \
 -g $RG \
 --gateway-name $APPGW_NAME \
 -n $APPGW_BPOOL_BACK \
---servers $BACK_APP_FQDN \
+--servers $WEBAPP_PRIVATE_IP \
 $OUTPUT
 
+#Criando url-path-map
+echo "Criando url-path-map"
 az network application-gateway url-path-map create \
 -g $RG \
 --gateway-name $APPGW_NAME \
