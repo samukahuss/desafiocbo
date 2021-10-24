@@ -2,29 +2,35 @@
 
 #---------------------------------------------------------------
 #Variaveis:
-OUTPUT='-o table --verbose'
+LOG_DIR='/repos/github/desafiocbo/src/.logs'
+DATE=$(date +%d%m%y_%H%M%S)
+LOG_FILE="$LOG_DIR/$DATE.log"
+OUTPUT="-o table --verbose"
 
-RG='rg-desafio'
+RG='rg-desafiocbo'
 RG_LOCATION='eastus2'
-DNS_ZONE='private.desafiocbo.com'
+DNS_ZONE='private.desafiocbo.corp'
 DNS_LINK_NAME='desafiocbo-dnslink'
-NSG='nsg-desafio'
-TAGS='ambiente=desafio'
-VNET='vnet-desafio'
+NSG='nsg-desafiocbo'
+TAGS='ambiente=desafiocbo'
+VNET='vnet-desafiocbo'
 VNET_ADDRESS_PREFIX='10.1.0.0/16'
 AS_FRONT_NAME="as-front-eastus2"
 
 #Subnets
+SN_VPN='subnet-vpn'
+SN_VPN_PREFIX='10.1.0.0/24'
 SN_MGMT='subnet-mgmt'
 SN_MGMT_PREFIX='10.1.1.0/24'
+SN_APPGW='subnet-appgw'
+SN_APPGW_PREFIX='10.1.2.0/24'
 SN_FRONT='subnet-front'
 SN_FRONT_PREFIX='10.1.3.0/24'
 SN_BACK='subnet-back'
 SN_BACK_PREFIX='10.1.4.0/24'
 SN_DATA='subnet-data'
 SN_DATA_PREFIX='10.1.5.0/24'
-SN_APPGW='subnet-appgw'
-SN_APPGW_PREFIX='10.1.2.0/24'
+
 
 #Load balances
 LB_SKU='Basic'
@@ -77,8 +83,8 @@ VM_MGMT_OS_TYPE='linux'
 
 #App service 
 BACK_APP_PATH='/repos/github/desafiocbo-app'
-BACK_APP_SKU='PremiumV2'
-#"PremiumV2"
+BACK_APP_SKU='B1'
+#"P1V2"
 #'S1'
 BACK_APP_NAME='app-desafiocbo'
 BACK_APP_FQDN="$BACK_APP_NAME.azurewebsites.net"
@@ -264,6 +270,14 @@ az network vnet subnet create -g $RG \
 --network-security-group $NSG \
 $OUTPUT
 
+#Criação da subnet da VPN
+echo "Criação da subnet da VPN"
+az network vnet subnet create -g $RG \
+--vnet-name $VNET \
+-n $SN_VPN\
+--address-prefixes $SN_VPN_PREFIX \
+--network-security-group $NSG \
+$OUTPUT
 
 ##Criação do load Balancer front
 #echo "Criação do load Balancer front"
@@ -458,40 +472,40 @@ $OUTPUT
 cd -
 
 #desabilitando private endpoint policy: subnet-back
-echo "desabilitando private endpoint policy: subnet-back"
-az network vnet subnet update \
---name $SN_BACK \
---resource-group $RG \
---vnet-name $VNET \
---disable-private-endpoint-network-policies true
+#echo "desabilitando private endpoint policy: subnet-back"
+#az network vnet subnet update \
+#--name $SN_BACK \
+#--resource-group $RG \
+#--vnet-name $VNET \
+#--disable-private-endpoint-network-policies true
 
-WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID=$(az resource show -g $RG -n $BACK_APP_NAME --resource-type "Microsoft.Web/sites" --query "id" -o tsv)
+#WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID=$(az resource show -g $RG -n $BACK_APP_NAME --resource-type "Microsoft.Web/sites" --query "id" -o tsv)
 
 #Criacao do private-endpoint para o webapp
-echo "Criacao do private-endpoint para o webapp"
-az network private-endpoint create \
---name $WEB_PRIVATE_ENDPOINT \
---resource-group $RG \
---vnet-name $VNET \
---subnet $SN_BACK \
---connection-name $WEB_CONNECTION_NAME \
---private-connection-resource-id $WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID \
---group-id 'sites'
+#echo "Criacao do private-endpoint para o webapp"
+#az network private-endpoint create \
+#--name $WEB_PRIVATE_ENDPOINT \
+#--resource-group $RG \
+#--vnet-name $VNET \
+#--subnet $SN_BACK \
+#--connection-name $WEB_CONNECTION_NAME \
+#--private-connection-resource-id $WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID \
+#--group-id 'sites'
 
-WEBAPP_PRIVATE_IP=$(az resource show --ids $WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID  --query 'properties.privateEndpointConnections[0].properties.ipAddresses[0]' -o tsv)
+#WEBAPP_PRIVATE_IP=$(az resource show --ids $WEBAPP_PRIVATE_CONNECTION_RESOURCE_ID  --query 'properties.privateEndpointConnections[0].properties.ipAddresses[0]' -o tsv)
 
 #adcição da entrada no DNS: app-desafiocbo
-echo "adcição da entrada no DNS: app-desafiocbo"
-az network private-dns record-set a create \
---name $BACK_APP_NAME \
---zone-name $RG \
---resource-group $RG
+#echo "adcição da entrada no DNS: app-desafiocbo"
+#az network private-dns record-set a create \
+#--name $BACK_APP_NAME \
+#--zone-name $RG \
+#--resource-group $RG
 
-az network private-dns record-set a add-record \
---record-set-name $BACK_APP_NAME \
---zone-name $DNS_ZONE \
---resource-group $RG \
--a $WEBAPP_PRIVATE_IP
+#az network private-dns record-set a add-record \
+#--record-set-name $BACK_APP_NAME \
+#--zone-name $DNS_ZONE \
+#--resource-group $RG \
+#-a $WEBAPP_PRIVATE_IP
 
 #Criando o application gateway
 echo "Criando o application gateway"
@@ -527,7 +541,7 @@ az network application-gateway address-pool create \
 -g $RG \
 --gateway-name $APPGW_NAME \
 -n $APPGW_BPOOL_BACK \
---servers $WEBAPP_PRIVATE_IP \
+--servers $BACK_APP_FQDN \
 $OUTPUT
 
 #Criando url-path-map
@@ -679,3 +693,8 @@ az network private-dns record-set a add-record \
 -a $DB_PRIVATE_IP \
 $OUTPUT
 
+#RTE
+echo "atualizando tabela de hosts"
+sudo cp -p /etc/hosts /etc/hosts.bak
+az network public-ip list -o table | tail -2 | awk '{print $4, $1, $1".private.desafiocbo.com"}' > hosts.tmp
+sudo cat hosts.tmp >> /etc/hosts
