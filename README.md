@@ -91,3 +91,18 @@ Todo o processo de deploy pode demorar mais de 70 minutos.
 samuel@NOT-01486:/repos/github/desafiocbo/src$ ./destroy-infra-azure.sh
 
 ```
+
+# Roadmap 
+
+Alguns pontos podem ser melhorados sem alterar a arquitetura da solução:
+- Devido não ter sido criado um domínio válido não foi possível personalisar o app service. Com um domínio seria possível, além de personalizar a url do app service, implementar uma private connection e fazer todo o tráfego de entrada passar por uma rede privada. Para isso o service plan deveria ser alterado para ao menos 'P1V2'.
+
+Alguns pontos pondem ser implementados na solução:
+- Uma terceira perna de cada aplicação no segundo site.
+
+Pontos sobre o provisionamento:
+- A linguagem pode ser alterada para o [terraform](https://www.terraform.io/)
+
+# Custo estimado do projeto
+
+Toda infraestrutura foi criada em ohio (useast2). O projeto tem um custo estimado de R$ 900 no regime 720h pay-as-you-go (Varia de acordo com o dólar). A maior parte desse preço está no recursos, do mais caro para o mais barato: Application gateway, Banco de dados, Virtual Machines, VPN e App Service. 
