@@ -18,7 +18,7 @@ VNET_ADDRESS_PREFIX='10.1.0.0/16'
 AS_FRONT_NAME="as-front-eastus2"
 
 #Subnets
-SN_VPN='subnet-vpn'
+SN_VPN='GatewaySubnet'
 SN_VPN_PREFIX='10.1.0.0/24'
 SN_MGMT='subnet-mgmt'
 SN_MGMT_PREFIX='10.1.1.0/24'
@@ -134,6 +134,12 @@ PRIVATE_ENDPOINT_CONNECTION_NAME='data-connection'
 #App private endpoint
 WEB_PRIVATE_ENDPOINT='webapp-private-endpoint' 
 WEB_CONNECTION_NAME='webapp-connection'
+
+#VPN
+VIRTUAL_NETWORK_GW_NAME='vng-desafiocbo'
+VIRTUAL_NETWORK_GW_PIP="$VIRTUAL_NETWORK_GW_NAME'_pip'"
+VIRTUAL_NETWORK_GW_REGION='eastus2'
+
 #---------------------------------------------------------------
 
 #Criação do resource group
@@ -168,24 +174,6 @@ az vm availability-set create \
 --platform-update-domain-count 2 \
 --tags $TAGS \
 $OUTPUT
-
-#Adicionando entrada no DNS: load balance frontend
-#echo "Adicionando entrada no DNS: load balance frontend"
-#az network private-dns record-set a add-record \
-#-g $RG \
-#-z $DNS_ZONE \
-#-n $LB_FRONT \
-#-a $LB_FRONT_IP \
-#$OUTPUT
-
-#Adicionando entrada no DNS: load balance backend
-#echo "Adicionando entrada no DNS: load balance backend"
-#az network private-dns record-set a add-record \
-#-g $RG \
-#-z $DNS_ZONE \
-#-n $LB_BACK \
-#-a $LB_BACK_IP \
-#$OUTPUT
 
 #Adicionando entrada no DNS: vm front1
 echo "Adicionando entrada no DNS: vm front1"
@@ -270,11 +258,11 @@ az network vnet subnet create -g $RG \
 --network-security-group $NSG \
 $OUTPUT
 
-#Criação da subnet da VPN
-echo "Criação da subnet da VPN"
+#Criação da subnet de VPN
+echo "Criação da subnet de VPN"
 az network vnet subnet create -g $RG \
 --vnet-name $VNET \
--n $SN_VPN\
+-n $SN_VPN \
 --address-prefixes $SN_VPN_PREFIX \
 --network-security-group $NSG \
 $OUTPUT
@@ -697,4 +685,32 @@ $OUTPUT
 echo "atualizando tabela de hosts"
 sudo cp -p /etc/hosts /etc/hosts.bak
 az network public-ip list -o table | tail -2 | awk '{print $4, $1, $1".private.desafiocbo.com"}' > hosts.tmp
-sudo cat hosts.tmp >> /etc/hosts
+cat hosts.tmp | sudo tee -a /etc/hosts
+
+#Criando o public IP para o VNG
+az network public-ip create \
+-n $VIRTUAL_NETWORK_GW_PIP \
+-g $RG \
+--allocation-method 'Dynamic' \
+--tags $TAGS \
+-o table --verbose
+
+#Criando o VNG
+az network vnet-gateway create \
+-n $VIRTUAL_NETWORK_GW_NAME \
+-l $VIRTUAL_NETWORK_GW_REGION \
+--public-ip-address $VIRTUAL_NETWORK_GW_PIP \
+-g $RG \
+--vnet 'vnet-desafiocbo' \
+--gateway-type 'Vpn' \
+--sku 'VpnGw1' \
+--vpn-type 'RouteBased' \
+--tags $TAGS \
+-o table --verbose
+
+#Da um tempo pro azure liberar meu ip
+sleep 10 
+
+VNG_PIP=$(az network public-ip show -g $RG -n $VIRTUAL_NETWORK_GW_PIP --query "ipAddress" -o tsv)
+
+./deploy-infra-aws.sh $VNG_PIP
