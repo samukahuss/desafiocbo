@@ -9,7 +9,6 @@
 
 2) Cloud Provider 2
   * Configurar comunicação privada(exemplo: VPN) entre o cloud provider 1 e o 2.
-  * Subir um servidor que responda no mesmo domínio das aplicações do outro cloud provider. Esse servidor terá por finalidade execução de testes.
 
 Observação: Caso o participante opte, encorajamos subir as aplicações em um cloud provider e o banco no outro cloud provider. Reforçamos que isso não é um requisito.
 
@@ -105,4 +104,4 @@ Pontos sobre o provisionamento:
 
 # Custo estimado do projeto
 
-Toda infraestrutura foi criada em ohio (useast2). O projeto tem um custo estimado de R$ 900 no regime 720h pay-as-you-go (Varia de acordo com o dólar). A maior parte desse preço está no recursos, do mais caro para o mais barato: Application gateway, Banco de dados, Virtual Machines, VPN e App Service. 
+Toda infraestrutura foi criada em ohio (eastus2). O projeto tem um custo estimado de R$ 900 no regime 720h pay-as-you-go (Varia de acordo com o dólar). A maior parte desse preço está no recursos, do mais caro para o mais barato: Banco de dados, Application gateway, Virtual Machines, VPN e App Service. 

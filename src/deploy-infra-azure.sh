@@ -137,7 +137,7 @@ WEB_CONNECTION_NAME='webapp-connection'
 
 #VPN
 VIRTUAL_NETWORK_GW_NAME='vng-desafiocbo'
-VIRTUAL_NETWORK_GW_PIP="$VIRTUAL_NETWORK_GW_NAME'_pip'"
+VIRTUAL_NETWORK_GW_PIP="$VIRTUAL_NETWORK_GW_NAME-pip"
 VIRTUAL_NETWORK_GW_REGION='eastus2'
 
 #---------------------------------------------------------------
@@ -264,7 +264,6 @@ az network vnet subnet create -g $RG \
 --vnet-name $VNET \
 -n $SN_VPN \
 --address-prefixes $SN_VPN_PREFIX \
---network-security-group $NSG \
 $OUTPUT
 
 ##Criação do load Balancer front
@@ -607,7 +606,7 @@ $OUTPUT
 
 #Obtendo o ip publico da vmmgmt01
 echo "Obtendo o ip publico da vmmgmt01"
-VMMGMT01_PIP=$(az vm show -d -g rg-desafio -n vmmgmt01 --query publicIps -o tsv)
+VMMGMT01_PIP=$(az vm show -d -g $RG -n $VM_MGMT_NAME --query publicIps -o tsv)
 
 #Adcionando entrada no DNS: VMMGMT01_PIP
 echo "Adcionando entrada no DNS: vmmgmt01-pip"
