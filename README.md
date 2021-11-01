@@ -56,7 +56,6 @@ Foi criada uma aplicação simples de backend e dispobinilizada no repositório 
 # Pré-requisitos
 - [Uma conta válida na Azure](https://azure.microsoft.com/en-us/free/search/?&ef_id=Cj0KCQjwiNSLBhCPARIsAKNS4_dbPmDMDyKEeDlQ-C6DP_VcH8s3pds5Xl8VM2pol9QK3V3I_x4ZWBQaArgNEALw_wcB:G:s&OCID=AID2200154_SEM_Cj0KCQjwiNSLBhCPARIsAKNS4_dbPmDMDyKEeDlQ-C6DP_VcH8s3pds5Xl8VM2pol9QK3V3I_x4ZWBQaArgNEALw_wcB:G:s&gclid=Cj0KCQjwiNSLBhCPARIsAKNS4_dbPmDMDyKEeDlQ-C6DP_VcH8s3pds5Xl8VM2pol9QK3V3I_x4ZWBQaArgNEALw_wcB)
 - [Uma conta válida na AWS](https://aws.amazon.com/free/?trk=ps_a134p0000078Pq7AAE&trkCampaign=acq_paid_search_brand&sc_channel=ps&sc_campaign=acquisition_BR&sc_publisher=google&sc_category=core-main&sc_country=BR&sc_geo=LATAM&sc_outcome=acq&sc_detail=aws&sc_content=Brand%20Core%20AWS_p&sc_matchtype=p&sc_segment=507891927296&sc_medium=ACQ-P|PS-GO|Brand|Desktop|SU|Core-Main|Core|BR|EN|Text|xx|PH&s_kwcid=AL!4422!3!507891927296!p!!g!!aws&ef_id=Cj0KCQjwiNSLBhCPARIsAKNS4_dE7lWRS7j7iQL2OrqiakDzahLQma4SDysPMQKeZmIIP0gHs6YNCpEaArXbEALw_wcB:G:s&s_kwcid=AL!4422!3!507891927296!p!!g!!aws&all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc&awsf.Free%20Tier%20Types=*all&awsf.Free%20Tier%20Categories=*all)
-- [bash](https://pt.wikipedia.org/wiki/Bash)
 - [az cli](https://docs.microsoft.com/pt-br/cli/azure/install-azure-cli)
 - [aws cli](https://aws.amazon.com/pt/cli/)
 - [desafiocbo-app](https://github.com/samukahuss/desafiocbo-app)
