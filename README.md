@@ -103,4 +103,6 @@ Pontos sobre o provisionamento:
 
 # Custo estimado do projeto
 
-Toda infraestrutura foi criada em ohio (eastus2). O projeto tem um custo estimado de R$ 900 no regime 720h pay-as-you-go (Varia de acordo com o dólar). A maior parte desse preço está no recursos, do mais caro para o mais barato: Banco de dados, Application gateway, Virtual Machines, VPN e App Service. 
+Toda infraestrutura foi criada em ohio (eastus2). O projeto tem um custo estimado de R$ 1495,77 no regime 720h pay-as-you-go (Varia de acordo com o dólar). A maior parte desse preço está no recursos, do mais caro para o mais barato: Banco de dados, Application gateway, Virtual Machines, VPN e App Service. 
+
+[Estimativa detalhada](/repos/github/desafiocbo/ExportedEstimate.xlsx)
